@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Resizer</title>
+</head>
+<body>
+    <h1>Image Resizer App</h1>
+    <form id="uploadForm">
+        <label for="imageUpload">Upload Image:</label>
+        <input type="file" id="imageUpload" name="imageUpload" accept="image/*">
+        <button type="button" onclick="uploadImage()">Upload</button>
+    </form>
+    <p id="status"></p>
+    <p>Resized Image Link: <a id="resizedImageLink" href="#" target="_blank"></a></p>
+
+    <script>
+        async function uploadImage() {
+            const input = document.getElementById('imageUpload');
+            if (input.files.length === 0) {
+                alert("Please select an image to upload.");
+                return;
+            }
+            const file = input.files[0];
+
+            document.getElementById("status").innerText = "Uploading...";
+
+            try {
+                // Replace with your Azure Storage account name and SAS token
+                const storageAccount = "iitmproject23f2004095ff";
+                const sasToken = "sv=2022-11-02&ss=bfqt&srt=co&sp=rwdlacupiyx&se=2024-12-28T23:00:12Z&st=2024-12-28T15:00:12Z&spr=https&sig=MxEecIbjr2Lawa7M3zxG0eVQzjbDi2xFjzvJFQYRRBw%3D";
+                const uploadUrl = `https://${storageAccount}.blob.core.windows.net/image-upload-container/${file.name}?${sasToken}`;
+
+                // Upload the image
+                const response = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: {
+                        "x-ms-blob-type": "BlockBlob"
+                    },
+                    body: file
+                });
+
+                if (response.ok) {
+                    document.getElementById("status").innerText = "Upload successful! Waiting for the image to process...";
+
+                    // Wait for the Azure Function to process the image
+                    setTimeout(() => {
+                        const resizedImageUrl = `https://${storageAccount}.blob.core.windows.net/resized-images/${file.name}`;
+                        document.getElementById("resizedImageLink").href = resizedImageUrl;
+                        document.getElementById("resizedImageLink").innerText = resizedImageUrl;
+                        document.getElementById("status").innerText = "Resized image is ready!";
+                    }, 10000); // Wait 10 seconds before generating the link
+                } else {
+                    document.getElementById("status").innerText = "Upload failed.";
+                }
+            } catch (error) {
+                document.getElementById("status").innerText = "An error occurred: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
